@@ -1,5 +1,5 @@
 # Calculation of Magnetic Force between a coil and a permanent Magnet
-This repo holds a python script as well as a jupyter notebook to calculate magnetic forces as mentioned in the header above using the Filament method given in the paper MagCoilForces.pdf hosted in this repo.  <br><br>
+This repo holds a python script as well as a jupyter notebook to calculate magnetic forces as mentioned in the header above using the Filament method given in this paper : https://ieeexplore.ieee.org/document/6184314  <br><br>
 For usage, you need to set the parameters of your system appropriately in the .json file hosted in the repo. The descriptions of all parameters are as given below -  
 Rm : Lenght (mm) Magnet Radius  
 lm : Length (mm) Magnet Length  
