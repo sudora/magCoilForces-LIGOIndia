@@ -1,21 +1,14 @@
-import os, time
-import numpy as np
+import os, time, json
 import scipy as sci
 from scipy import special
 from scipy import constants as c
+import numpy as np
 import matplotlib.pyplot as plt
-from multiprocessing import Pool
+from mpl_toolkits.axes_grid.axislines import SubplotZero
 
 #Collecting user inputs from magCoilConfig.txt
-mmTometre = 0.001
-f=open("magCoilConfig.txt","r")
-config=f.read()
-config=[con[:con.find('#')].strip() for con in config.split('\n')]
-param={}
-for c in config:
-    key, val = c.split(' ')[0], np.float(c.split(' ')[-1])
-    param[key]=val
-
+param=json.loads(open("magCoilConfig.json").read())
+mmTometre=1e-3
 Rm = param['Rm'] * mmTometre # L(mm) Magnet Radius
 lm = param['lm'] * mmTometre # L(mm) Magnet Length
 Nm = param['Nm'] # (num) Magnet 'turns'
@@ -30,6 +23,7 @@ zmin = param['zmin'] # (mm) Origin is at center of the coil. Leftmost position o
 zmax = param['zmax'] # (mm) Rightmost position of magnet from center of coil
 step = param['step'] # (num) steps in which you want to split the zmax-zmin distance. Granularity
 zRange = np.arange(zmin, zmax, step) * mmTometre
+N = Nz*Nr # Total number of turns in the coil
 
 def Ff(r1, r2, z):
     term1=I*z*Br*lm/Nm
@@ -43,9 +37,9 @@ def Ff(r1, r2, z):
     return Ff
 
 def r(nr):
-	term1=(nr-1)/(Nr-1)
+    term1=(nr-1)/(Nr-1)
     return rc+(term1*(Rc-rc))
-
+    
 def L(nm, nz):
     term1=(nz-1)/(Nz-1)
     term2=(nm-1)/(Nm-1)
@@ -63,23 +57,27 @@ def ForceFilament(z):
     return F
 
 if __name__=="__main__":
-	Force=[]
-	for v in zRange:
-		Force.append(FoceFilament(v))
-	print("Max Force (N) : ",np.amax(Force),"Min Force (N) : ",np.amin(Force))
-	print("Sweet Spots (mm) : ",zRange[np.argmin(Force)]*1e3, zRange[np.argmax(Force)]*1e3)
-	fig=plt.figure(num=None, figsize=(10,5), dpi=100)
-	ax = SubplotZero(fig, 111)
-	fig.add_subplot(ax)
-	for direction in ["xzero","yzero"]:
-	    ax.axis[direction].set_axisline_style("-|>")
-	    ax.axis[direction].set_visible(True)
+    st=time.time()
+    Force=[]
+    for v in zRange:
+        Force.append(ForceFilament(v))
+    print("Execution Time per 100 steps (s) : {:.03f}".format(np.around((time.time()-st)*100/len(zRange),3)))
 
-	plt.text(zmax/8,np.amax(Force),"Force(N)")
-	plt.text(zmin,np.amin(Force)/4, "z(mm)")
+    print("Force (N)",np.amin(Force)/I)
+    print("Sweet spot (mm)",zRange[np.argmin(Force)]*1000)
 
-	for direction in ["left", "right", "bottom", "top"]:
-	    ax.axis[direction].set_visible(False)
-	        
-	plt.plot(zRange*1e3,Force)
-	plt.savefig("MagCoilForceFigure.jpg")
+    fig=plt.figure(num=None, figsize=(10,5), dpi=100)
+    ax = SubplotZero(fig, 111)
+    fig.add_subplot(ax)
+    for direction in ["xzero","yzero"]:
+        ax.axis[direction].set_axisline_style("-|>")
+        ax.axis[direction].set_visible(True)
+
+    plt.text(zmax/8,np.amax(Force),"Force(N)")
+    plt.text(zmin,np.amin(Force)/4, "z(mm)")
+
+    for direction in ["left", "right", "bottom", "top"]:
+        ax.axis[direction].set_visible(False)
+            
+    plt.plot(zRange*1e3,Force)
+    plt.savefig("MagCoilForceFigure.jpg")
